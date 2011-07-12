@@ -1,5 +1,5 @@
 /*
-	$Header: /usr/local/cvsroot/lifelineskincare.com/elements/scripts/cvc_checkForm.js,v 1.3 2009/10/28 22:23:06 tngsandiego Exp $
+	$Header: /usr/local/cvsroot/cavicchi.net/elements/scripts/cvc_checkForm.js,v 1.4 2011/07/12 22:23:06 matteo Exp $
 
 	CaViCcHi check Form: Copyright 2008 - NOW()
 
