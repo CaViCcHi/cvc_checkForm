@@ -1,5 +1,5 @@
 /*
-	$Header: /usr/local/cvsroot/cavicchi.net/elements/scripts/cvc_checkForm.js,v 1.3 2009/10/28 22:23:06 matteo Exp $
+	$Header: /usr/local/cvsroot/lifelineskincare.com/elements/scripts/cvc_checkForm.js,v 1.3 2009/10/28 22:23:06 tngsandiego Exp $
 
 	CaViCcHi check Form: Copyright 2008 - NOW()
 
@@ -15,6 +15,9 @@
 
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+	=== New in 1.5 - 2010
+	- Added compatibility to placeholder jQuery: CVC_mFields_wPlaceHolder
 
 	=== New in 1.4 - 2010
 	- Added override message: CVC_mFields_overrideMsg
@@ -71,6 +74,7 @@ function CVCmFieldsCheck(formname){
 	        var tmpExtensions = Array();
 	        var tmpVals = Array();
 		var skipThisIfNotEval=false;
+		var perfectMatch=false;
 	        fieldsType = document.forms[formname].elements['CVC_mFields'].value.split("*");
 	        //alert(fieldsType);
 	 	for(j=0;j<fieldsType.length;j++){
@@ -83,7 +87,13 @@ function CVCmFieldsCheck(formname){
 			}
                         if(isNumeric.test(tmpStuff[0])){
 			 	for(k=0;k<tmpElements.length;k++){
+			 		if(eval(document.forms[formname].elements['CVC_mFields_wPlaceHolder'])){
+			 		        if(document.forms[formname].elements[tmpElements[k]].value == document.forms[formname].elements[tmpElements[k]].title){
+			 				document.forms[formname].elements[tmpElements[k]].value = '';
+						}
+			 		}
 					if(tmpElements[k].substr(0,1) == "@"){ tmpElements[k]=tmpElements[k].substr(1); skipThisIfNotEval=true;}
+					if(tmpElements[k].substr(0,1) == "!"){ tmpElements[k]=tmpElements[k].substr(1); skipThisIfNotEval=true;perfectMatch=true;}
 					var newString = tmpElements[k].replace("form_","");
 					if(!eval(document.forms[formname].elements[tmpElements[k]])){ alert("Error: Are you sure about this item: '"+tmpElements[k]+"'?\ncause I am really not sure it is part of the form...");return false;}
 					if(document.forms[formname].elements[tmpElements[k]].value == undefined && document.forms[formname].elements[tmpElements[k]].length != undefined){
@@ -98,23 +108,24 @@ function CVCmFieldsCheck(formname){
 						        if(eval(document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"])){
 					        		problems += "- " + document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"].value+'\n';
 					        	}else{
-								problems += '- Missing ' + newString.replace("_"," ")+'\n';
+								problems += '- Invalid ' + newString.replace("_"," ")+'\n';
 							}
 						}
-					}else if(document.forms[formname].elements[tmpElements[k]].value.length < tmpStuff[0] && (document.forms[formname].elements[tmpElements[k]].value.length != 0 || !skipThisIfNotEval)){
+					}else if(((perfectMatch && document.forms[formname].elements[tmpElements[k]].value.length != tmpStuff[0]) && (document.forms[formname].elements[tmpElements[k]].value.length != 0 || !skipThisIfNotEval)) || ((!perfectMatch && document.forms[formname].elements[tmpElements[k]].value.length < tmpStuff[0]) && (document.forms[formname].elements[tmpElements[k]].value.length != 0 || !skipThisIfNotEval))){
 					        if(eval(document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"])){
 					        	problems += "- " + document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"].value+'\n';
 					        }else{
 			                                if(!eval(document.forms[formname].elements['CVC_mFields_giveInfoFields'])){
 								problems += '- ' + newString.replace("_"," ") + ' should be at least '+tmpStuff[0]+' characters\n';
 							}else{
-								problems += '- Missing ' + newString.replace("_"," ")+' \n';
+								problems += '- Invalid ' + newString.replace("_"," ")+' \n';
 							}
 						}
 						if(enableBorder)giveFocus(document.forms[formname].elements[tmpElements[k]],beforeBorder,afterBorder);
 						if(enableBackground)giveBg(document.forms[formname].elements[tmpElements[k]],beforeBackground,afterBackground);
 					}
 					skipThisIfNotEval=false;
+					perfectMatch=false;
 					newString=null;
 				}
 				tmpElements=Array();
@@ -172,11 +183,37 @@ function CVCmFieldsCheck(formname){
 							}
 						}
                         	        break;
+                        	        case 'atleast':
+                        	        var problem='';
+                        	        console.info('atleast');
+                        	        	var rc = false;
+                        	        	for(k=0;k<tmpElements.length;k++){
+                        	        	console.info("document.forms["+formname+"].elements["+tmpElements[k]+"] = " +document.forms[formname].elements[tmpElements[k]].length);
+							if(document.forms[formname].elements[tmpElements[k]].value.length > 0){
+								rc = true;
+								break;
+							}else{
+	                	        			var newString = tmpElements[k].replace("form_","");
+	                	        		        if(eval(document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"])){
+					        			problem += "- " + document.forms[formname].elements["CVC_mFields_customMsg['"+tmpElements[k]+"']"].value+'\n';
+					        		}else{
+									problem += '- ' + newString.replace("_"," ")+' incorrect\n';
+								}
+							}
+						}
+						if(!rc){
+							problems += problem;
+						}
+                        	        break;
                         	        case 'radiock':
                         	        	for(k=0;k<tmpElements.length;k++){
                         	        	var rc = false;
-	                        	                for (c=0;c<document.forms[formname].elements[tmpElements[k]].length;c++){
-								if(document.forms[formname].elements[tmpElements[k]][c].checked){rc = true;}
+                        	        	        if( document.forms[formname].elements[tmpElements[k]].length == undefined ){
+                        	        	        	if(document.forms[formname].elements[tmpElements[k]].checked){rc = true;}
+                        	        	        }else{
+		                        	                for (c=0;c<document.forms[formname].elements[tmpElements[k]].length;c++){
+									if(document.forms[formname].elements[tmpElements[k]][c].checked){rc = true;break;}
+								}
 							}
 							if(!rc){
                         	        			var newString = tmpElements[k].replace("form_","");
@@ -252,10 +289,20 @@ function CVCmFieldsCheck(formname){
 	*/
 
 	if(problems.length > 0){
-	        if(eval(document.forms[formname].elements["CVC_mFields_overrideMsg"])){
-	                alert(document.forms[formname].elements["CVC_mFields_overrideMsg"].value);
-	        }else{
-			alert(problems);
+		if(eval(document.getElementById('msgToGo')) && eval(document.forms[formname].elements["CVC_mFields_useMsgToGo"])){
+		        problems = '<b>Please review the followings before submitting:</b>\n' + problems;
+		        if(eval(document.forms[formname].elements["CVC_mFields_overrideMsg"])){
+		                superAlert( document.forms[formname].elements["CVC_mFields_overrideMsg"].value );
+		        }else{
+				superAlert( problems );
+			}
+			show('msgToGo');
+		}else{
+		        if(eval(document.forms[formname].elements["CVC_mFields_overrideMsg"])){
+		                alert(document.forms[formname].elements["CVC_mFields_overrideMsg"].value);
+		        }else{
+				alert(problems);
+			}
 		}
 		return false;
 	}
